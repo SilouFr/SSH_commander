@@ -1,0 +1,7 @@
+10.223.32.2
+10.2.3.3:45
+toto@10.0.1.1
+toto@10.5.2.3:456
+toto@10.0.1.1 password=toto
+10.2.3.3:45 id_rsa=test.priv
+10.2.3.3:45 id_rsa=/home/toto/test/super_key.priv

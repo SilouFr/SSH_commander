@@ -31,9 +31,6 @@ def import_etc_hosts():
 	hosts_list = open(hosts_file, 'r').readlines() #read /etc/hosts
 	hosts_list = map(str.rstrip, hosts_list) #remove \r and \n
 	hosts_list = filter(None, hosts_list) #remove empty elements
-	cut_index = hosts_list.index("# --- END PVE ---") #index of "END PVE"
-	hosts_list = hosts_list[cut_index+1:] #all lines after this index
-	#print hosts_list, len(hosts_list)
 
 	array_list = []
 	for line in hosts_list:
@@ -46,6 +43,58 @@ def import_etc_hosts():
 
 	print "[+]", len(array_list), "machines loaded from", hosts_file
 
+	return array_list
+
+def import_host_list(host_list_file):
+	#relative path
+	if host_list_file[0] != "/":
+		host_list_file = os.getcwd() + "/" + host_list_file
+
+	host_list = open(host_list_file, 'r').readlines() #read /etc/hosts
+	host_list = map(str.rstrip, host_list) #remove \r and \n
+	host_list = filter(None, host_list) #remove empty elements
+
+	array_list = []
+	for line in host_list:
+		host_configuration = [""] * 4
+		params = None
+
+		#split the line
+		if " " in line:
+			host_info, params = line.split(" ")
+		else:
+			host_info = line
+
+		#username
+		if "@" in host_info:
+			host_username, host_info = host_info.split("@")
+			host_configuration[0] = host_username
+		
+		#port
+		if ":" in host_info:
+			host_ip, host_port = host_info.split(":")
+			host_configuration[1] = host_ip
+			host_configuration[2] = host_port
+		else:
+			host_ip = host_info
+			host_configuration[1] = host_ip
+
+		if params is not None:
+			#password provided
+			if "password" in params:
+				host_password = params.split("=")[1]
+				host_configuration[3] = "pass:"+host_password
+
+			#id_rsa provided, relative or not
+			elif "id_rsa" in params:
+				host_id_rsa = params.split("=")[1]
+				if host_id_rsa[0] != "/":
+					host_configuration[3] = "id_rsa:" + os.getcwd() + "/" + host_id_rsa
+				else:
+					host_configuration[3] = "id_rsa:" + host_id_rsa
+
+		array_list.append(host_configuration)
+	print "[+]", len(array_list), "machines loaded from", host_list_file
 	return array_list
 
 
@@ -98,26 +147,40 @@ def main():
 	print "== SSH commander script =="
 
 	paramiko.util.log_to_file('ssh_commander.log')
-	hosts = import_etc_hosts()
 
+	#defaults
 	default_user = "root"
 	default_port = 22
-	key_path = "/home/admin/.ssh/id_rsa"
+	default_key_path = os.path.expanduser("~/.ssh/id_rsa")
 
 	#script arguments parsing
 	parser = argparse.ArgumentParser(description="Command execution on multiple hosts")
 	parser.add_argument('-c', "--command", action="store", help="run a command", dest="command", nargs="+")
-	parser.add_argument('-u', '--update', action="store_true", help="update CTs", dest="update")
-	parser.add_argument('-U', '--upgrade', action="store_true", help="update && upgrade CTs", dest="upgrade")
+	parser.add_argument('-u', '--update', action="store_true", help="update systems", dest="update")
+	parser.add_argument('-U', '--upgrade', action="store_true", help="update && upgrade systems", dest="upgrade")
+	parser.add_argument('-f', "--file", action="store", help="host list file", dest="host_list_file")
+	parser.add_argument("--hosts", action="store", help="use /etc/hosts", dest="etc_hosts_list")
 
 	try:
 		arguments = parser.parse_args()
 	except:
-		parser.print_help()
+		'''parser.print_help()'''
 		sys.exit(0)
 
 	global client_connection
 	command = ""
+	hosts = ""
+
+	#list from aribtrary file
+	if arguments.host_list_file:
+		host_list_file = arguments.host_list_file
+		hosts = import_host_list(host_list_file)
+	
+
+	#list from /etc/hosts
+	if arguments.etc_hosts_list:
+		etc_hosts_list = arguments.etc_hosts_list		
+		hosts = import_etc_hosts()
 
 	#execute a simple command
 	if arguments.command:
@@ -140,10 +203,11 @@ def main():
 
 	command_success = 0
 	command_error = 0
-	#index to connect to every server in the list EXCEPT the first one which is the GW
-	for i in range(1, len(hosts)):
+
+
+	for i in range(len(hosts)):
 		index = str(i)+"/"+str(len(hosts))
-		connect_to_host(hosts[i][1], default_port, default_user, key_path, index)
+		connect_to_host(hosts[i][1], default_port, default_user, default_key_path, index)
 		command_exec = run_command(command)
 
 		#stats for success/fail
@@ -158,9 +222,5 @@ def main():
 	print bcolors.OKGREEN + "success :", command_success, bcolors.ENDC
 	print bcolors.FAIL + "errors :", command_error, bcolors.ENDC
 
-	if arguments.upgrade:
-		print bcolors.BOLD + "don't forget to run upgrade on this machine"
 
-
-#tests area
 main()
