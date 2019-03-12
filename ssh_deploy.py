@@ -56,7 +56,8 @@ def import_host_list(host_list_file):
 
 	array_list = []
 	for line in host_list:
-		host_configuration = [""] * 4
+		#[user, host, port, pass, id_rsa]
+		host_configuration = [""] * 5
 		params = None
 
 		#split the line
@@ -89,9 +90,9 @@ def import_host_list(host_list_file):
 			elif "id_rsa" in params:
 				host_id_rsa = params.split("=")[1]
 				if host_id_rsa[0] != "/":
-					host_configuration[3] = "id_rsa:" + os.getcwd() + "/" + host_id_rsa
+					host_configuration[4] = "id_rsa:" + os.getcwd() + "/" + host_id_rsa
 				else:
-					host_configuration[3] = "id_rsa:" + host_id_rsa
+					host_configuration[4] = "id_rsa:" + host_id_rsa
 
 		array_list.append(host_configuration)
 	print "[+]", len(array_list), "machines loaded from", host_list_file
@@ -207,7 +208,33 @@ def main():
 
 	for i in range(len(hosts)):
 		index = str(i)+"/"+str(len(hosts))
-		connect_to_host(hosts[i][1], default_port, default_user, default_key_path, index)
+
+		#user
+		if hosts[i][0] != "":
+			host_username = hosts[i][0]
+		else:
+			host_username = default_user
+
+		#port
+		if hosts[i][2] != "":
+			host_port = hosts[i][2]
+		else:
+			host_port = default_port
+
+		#pass
+		if hosts[i][3] != "":
+			host_password = hosts[i][3]
+		else:
+			host_password = "ChangeMe!"
+
+		#key
+		if hosts[i][4] != "":
+			host_key = hosts[i][4]
+		else:
+			host_key = default_key_path
+
+		exit()
+		connect_to_host(hosts[i][1], host_port, host_username, host_key, host_password, index)
 		command_exec = run_command(command)
 
 		#stats for success/fail
