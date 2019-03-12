@@ -99,14 +99,20 @@ def import_host_list(host_list_file):
 	return array_list
 
 
-def connect_to_host(hostname, port, username, key_file, index):
+def connect_to_host(hostname, port, username, key_file, password, index):
 	global client_connection
 
-	key = paramiko.RSAKey.from_private_key_file(key_file)
 	client_connection = paramiko.SSHClient()
 	client_connection.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-	client_connection.connect(hostname, port, username, pkey = key )
+	key = paramiko.RSAKey.from_private_key_file(key_file)
+
+	if password != "":
+		client_connection.connect(hostname, port, username, password)
+
+	else:
+		client_connection.connect(hostname, port, username, pkey = key )
+
 	print bcolors.BOLD + "\n[+]["+index+"] connected to "+str(username)+"@"+str(hostname)+":"+str(port) + bcolors.ENDC
 
 
@@ -153,6 +159,7 @@ def main():
 	default_user = "root"
 	default_port = 22
 	default_key_path = os.path.expanduser("~/.ssh/id_rsa")
+	default_password = ""
 
 	#script arguments parsing
 	parser = argparse.ArgumentParser(description="Command execution on multiple hosts")
@@ -207,7 +214,7 @@ def main():
 
 
 	for i in range(len(hosts)):
-		index = str(i)+"/"+str(len(hosts))
+		index = str(i+1)+"/"+str(len(hosts))
 
 		#user
 		if hosts[i][0] != "":
@@ -225,7 +232,7 @@ def main():
 		if hosts[i][3] != "":
 			host_password = hosts[i][3]
 		else:
-			host_password = "ChangeMe!"
+			host_password = default_password
 
 		#key
 		if hosts[i][4] != "":
@@ -233,7 +240,6 @@ def main():
 		else:
 			host_key = default_key_path
 
-		exit()
 		connect_to_host(hosts[i][1], host_port, host_username, host_key, host_password, index)
 		command_exec = run_command(command)
 
