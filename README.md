@@ -1,11 +1,11 @@
 # SSH_commander
 A simple script to execute system commands through SSH on multiple hosts
 
-##Dependencies and python version
+## Dependencies and python version
 SSH Commander depends on the **paramiko** library. No more.
 It runs under **Python 2.7**. I live in the past.
 
-##Usage
+## Usage
 ```
 python ssh_commander.py -h
 
@@ -31,7 +31,7 @@ optional arguments:
 + Or your /etc/hosts file using **--hosts**
 + You can also update or upgrade the systems using **-u** or **-U**
 
-##Host file list
+## Host file list
 The host file list has the following structure:
 ```
 user@IP:port password=pass id_rsa=path/to/priv_key
@@ -45,7 +45,7 @@ Only the IP is mandatory, default values for other fileds are:
 If no password is specified, the private key is used.
 An example file is included as **hostlist_example.txt**.
 
-##Troubles and ameliorations
+## Troubles and ameliorations
 You are free to contribute to this project by reporting troubles and suggestions.
 Every code amelioration is welcome.
 Moreover, you are free to fork the code and go on your way !
